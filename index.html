@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selector Dinámico</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Swiper CSS para el carrusel -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <style>
+        body {
+            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-weight: 700;
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+        }
+
+        .swiper-container {
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .swiper-slide img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .swiper-button-next,
+        .swiper-button-prev {
+            color: #007bff;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .card {
+                margin-bottom: 20px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Selector de Categorías</h1>
+
+        <!-- Contenedor para las tarjetas de carpetas y subcarpetas -->
+        <div id="foldersContainer" class="row">
+            <!-- Los carruseles por cada carpeta se insertarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Bootstrap JS y dependencias -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Swiper JS para el carrusel -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+    <script>
+        // Función para actualizar el contenedor de carpetas con los carruseles y el botón de descarga para archivos .docx
+        function updateFoldersContainer(folders) {
+            const container = document.getElementById('foldersContainer');
+            container.innerHTML = ''; // Limpiar el contenedor de carpetas
+
+            if (folders.length === 0) {
+                // Mostrar mensaje si no hay carpetas válidas
+                container.innerHTML = '<div class="col-12 text-center">No hay contenido disponible para mostrar.</div>';
+                return;
+            }
+
+            folders.forEach((folder, index) => {
+                const uniqueId = `folder-${index}`; // Generar un ID único para cada folder
+                let cardHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>${folder.name}</h5>
+                        </div>
+                        <div class="swiper-container" id="${uniqueId}">
+                            <div class="swiper-wrapper" id="swiperWrapper-${uniqueId}">
+                                <!-- Las imágenes del carrusel se insertarán aquí dinámicamente -->
+                            </div>
+                            <div class="swiper-button-next swiper-button-next-${uniqueId}"></div>
+                            <div class="swiper-button-prev swiper-button-prev-${uniqueId}"></div>
+                        </div>
+                    </div>
+                `;
+
+                // Verificar si hay algún archivo .docx en la carpeta
+                const docxFiles = folder.files.filter(file => file.name.endsWith('.docx'));
+                if (docxFiles.length > 0) {
+                    // Asegurarse de que el archivo .docx se ha encontrado
+                    console.log("Archivo .docx encontrado:", docxFiles[0]);
+
+                    // Crear un botón de descarga para el archivo .docx
+                    cardHTML += `
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary download-button" data-url="${docxFiles[0].url}">
+                                Descargar Información (.docx)
+                            </button>
+                        </div>
+                    `;
+                }
+                // Crear la tarjeta con el HTML generado
+                const card = document.createElement('div');
+                card.classList.add('col-md-4', 'mb-4');
+                card.innerHTML = cardHTML;
+                container.appendChild(card);
+                // Llenar el carrusel con imágenes (excluyendo archivos .docx)
+                const swiperWrapper = document.getElementById(`swiperWrapper-${uniqueId}`);
+                folder.files.forEach((file) => {
+                    // Excluir archivos .docx del carrusel
+                    if (!file.name.endsWith('.docx')) {
+                        let swiperSlide = document.createElement('div');
+                        swiperSlide.classList.add('swiper-slide');
+                        let img = document.createElement("img");
+                        img.src = file.url;
+                        img.alt = file.name;
+                        swiperSlide.appendChild(img);
+                        swiperWrapper.appendChild(swiperSlide);
+                    }
+                });
+                // Inicializar Swiper para este carrusel específico
+                new Swiper(`#${uniqueId}`, {
+                    slidesPerView: 1,
+                    spaceBetween: 10,
+                    navigation: {
+                        nextEl: `.swiper-button-next-${uniqueId}`,
+                        prevEl: `.swiper-button-prev-${uniqueId}`,
+                    },
+                });
+            });
+
+            // Evento para el botón de descarga
+            document.querySelectorAll('.download-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const downloadUrl = event.target.getAttribute('data-url');
+                    window.location.href = downloadUrl; // Descargar el archivo
+                });
+            });
+        }
+        // Función para cargar carpetas y subcarpetas para un ID específico
+        const loadFolders = async (categoryId) => {
+            try {
+                const response = await fetch(`http://3.133.135.57:80/get_teamfolder_details?teamfolder_id=${categoryId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({}),
+                });
+                const folders = await response.json();
+                if (Array.isArray(folders) && folders.length > 0) {
+                    const processedFolders = extractFolders(folders);
+                    updateFoldersContainer(processedFolders);
+                } else {
+                    console.log("No se encontraron carpetas para esta categoría");
+                }
+            } catch (error) {
+                console.error("Error al cargar carpetas:", error);
+            }
+        };
+        // Función para extraer las subcarpetas y archivos
+        function extractFolders(data) {
+            let folders = [];
+
+            function traverseStructure(obj) {
+                if (obj.files && obj.files.length > 0) {
+                    let files = obj.files
+                        .filter(file => {
+                            const fileExtension = file.name.split('.').pop().toLowerCase();
+                            const excludedExtensions = ['docx']; // Excluir los archivos .docx
+                            return file.thumbnail_url && file.thumbnail_url.trim() !== "" && !excludedExtensions.includes(fileExtension);
+                        })
+                        .map(file => ({
+                            name: file.name,
+                            url: file.thumbnail_url,
+                        }));
+
+                    if (files.length > 0) { // Solo incluir carpetas con archivos válidos
+                        folders.push({ name: obj.name, files: files });
+                    }
+                }
+                // Recorrer subcarpetas si existen
+                if (obj.subfolders) {
+                    if (Array.isArray(obj.subfolders) && obj.subfolders.length > 0) {
+                        obj.subfolders.forEach((subfolder) => traverseStructure(subfolder));
+                    } else if (typeof obj.subfolders === "object") {
+                        traverseStructure(obj.subfolders);
+                    }
+                }
+            }
+            // Recorre todos los objetos en el array data
+            data.forEach((item) => traverseStructure(item));
+            return folders;
+        }
+        // Cargar las carpetas para el ID predeterminado (959rm4c69c978101c433b912e48836d90d84f)
+        loadFolders("959rm4c69c978101c433b912e48836d90d84f");
+    </script>
+
+</body>
+</html>
